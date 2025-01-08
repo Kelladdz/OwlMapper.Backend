@@ -1,0 +1,40 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZkmBusTimetables.WebApi", "ZkmBusTimetables.WebApi\ZkmBusTimetables.WebApi.csproj", "{94302B2E-3046-4F21-857D-EF6E54274213}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZkmBusTimetables.Application", "ZkmBusTimetables.Application\ZkmBusTimetables.Application.csproj", "{A3FB1B76-99A3-4DAA-9CF6-77D5E54A81E6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZkmBusTimetables.Infrastructure", "ZkmBusTimetables.Infrastructure\ZkmBusTimetables.Infrastructure.csproj", "{FA9333EB-E9A3-464C-A545-7913A0B1D372}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZkmBusTimetables.Core", "ZkmBusTimetables.Core\ZkmBusTimetables.Core.csproj", "{2B8B3500-C596-4393-8B5F-666FCA38FA32}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{94302B2E-3046-4F21-857D-EF6E54274213}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{94302B2E-3046-4F21-857D-EF6E54274213}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{94302B2E-3046-4F21-857D-EF6E54274213}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{94302B2E-3046-4F21-857D-EF6E54274213}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A3FB1B76-99A3-4DAA-9CF6-77D5E54A81E6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A3FB1B76-99A3-4DAA-9CF6-77D5E54A81E6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A3FB1B76-99A3-4DAA-9CF6-77D5E54A81E6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A3FB1B76-99A3-4DAA-9CF6-77D5E54A81E6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FA9333EB-E9A3-464C-A545-7913A0B1D372}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FA9333EB-E9A3-464C-A545-7913A0B1D372}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FA9333EB-E9A3-464C-A545-7913A0B1D372}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FA9333EB-E9A3-464C-A545-7913A0B1D372}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2B8B3500-C596-4393-8B5F-666FCA38FA32}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2B8B3500-C596-4393-8B5F-666FCA38FA32}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2B8B3500-C596-4393-8B5F-666FCA38FA32}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2B8B3500-C596-4393-8B5F-666FCA38FA32}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
