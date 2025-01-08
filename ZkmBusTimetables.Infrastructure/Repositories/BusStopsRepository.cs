@@ -41,12 +41,12 @@ namespace ZkmBusTimetables.Infrastructure.Repositories
                     .FirstOrDefaultAsync(cancellationToken);
 
                 routeStop.Variant = variant;
-                routeStop.Variant.Line = line;
+                routeStop.Variant.LineId = line.Id;
             }
 
             return busStop;
-            
-        } 
+
+        }
 
         public async Task<IEnumerable<BusStop>> GetAllAsync(CancellationToken cancellationToken)
         {
@@ -60,7 +60,7 @@ namespace ZkmBusTimetables.Infrastructure.Repositories
 
         public async Task<IEnumerable<BusStop>> SearchAsync(string term, CancellationToken cancellationToken)
         {
-            if (string.IsNullOrEmpty(term)) 
+            if (string.IsNullOrEmpty(term))
                 return Array.Empty<BusStop>();
 
             var matchingBusStops = await dbContext.BusStops
@@ -90,7 +90,7 @@ namespace ZkmBusTimetables.Infrastructure.Repositories
 
 
             await dbContext.BusStops.AddAsync(busStop, cancellationToken);
-            return await dbContext.SaveChangesAsync(cancellationToken) > 0 
+            return await dbContext.SaveChangesAsync(cancellationToken) > 0
                 ? busStop : throw new HttpResponseException(HttpStatusCode.BadRequest);
         }
 

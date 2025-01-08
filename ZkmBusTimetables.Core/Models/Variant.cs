@@ -11,10 +11,10 @@ namespace ZkmBusTimetables.Core.Models
 {
     public class Variant
     {
-        public Guid Id { get; set; } = Guid.NewGuid();
+        public Guid Id { get; private init; } = Guid.NewGuid();
         public Guid LineId { get; set; }
         [JsonIgnore]
-        public Line Line { get; set; } = default!;
+        public Line Line { get; init; } = default!;
         public string Route { get; set; } = default!;
         public bool IsDefault { get; set; } = default!;
         public string? Slug { get; private set; }
@@ -22,7 +22,7 @@ namespace ZkmBusTimetables.Core.Models
         public ICollection<RouteStop> RouteStops { get; init; } = new List<RouteStop>();
         public ICollection<Departure> Departures { get; init; } = new List<Departure>();
         public ICollection<RouteLinePoint> RouteLinePoints { get; init; } = new List<RouteLinePoint>();
-        
+
         public void GenerateSlug()
         {
 

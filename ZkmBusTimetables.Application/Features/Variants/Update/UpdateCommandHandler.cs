@@ -15,11 +15,10 @@ namespace ZkmBusTimetables.Application.Features.Variants.Update
         public async Task<bool> Handle(UpdateCommand command, CancellationToken cancellationToken)
         {
             var lineName = command.LineName;
-            var variantId = command.Id;  
+            var variantId = command.Id;
             var request = command.Request;
 
             var variantToUpdate = mapper.Map<Variant>(request);
-            variantToUpdate.Id = variantId;
 
             return await variantsRepository.UpdateAsync(lineName, variantId, variantToUpdate, cancellationToken);
         }

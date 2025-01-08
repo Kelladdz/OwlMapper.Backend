@@ -19,11 +19,11 @@ namespace ZkmBusTimetables.Infrastructure.Repositories
     {
         public async Task<Variant> GetAsync(
             string lineName,
-            Guid variantId,       
+            Guid variantId,
             CancellationToken cancellationToken)
         {
             var variant = await dbContext.Variants
-                
+
                 .Include(variant => variant.Line)
                 .Include(variant => variant.RouteStops.OrderBy(routeStop => routeStop.Order))
                 .ThenInclude(routeStop => routeStop.BusStop)
@@ -71,7 +71,6 @@ namespace ZkmBusTimetables.Infrastructure.Repositories
                 .Where(variant => variant.Line.Name == lineName && variant.RouteStops.Any(routeStop => routeStop.BusStopId == busStopId))
                 .Select(variant => new Variant
                 {
-                    Id = variant.Id,
                     LineId = variant.LineId,
                     Route = variant.Route,
                     ValidFrom = variant.ValidFrom,
@@ -98,8 +97,8 @@ namespace ZkmBusTimetables.Infrastructure.Repositories
         }
 
         public async Task<Variant> InsertAsync(
-            string lineName, 
-            Variant variant, 
+            string lineName,
+            Variant variant,
             CancellationToken cancellationToken)
         {
             var line = await dbContext.Lines
