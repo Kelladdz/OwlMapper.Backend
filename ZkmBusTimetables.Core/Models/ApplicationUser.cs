@@ -14,7 +14,5 @@ namespace ZkmBusTimetables.Core.Models
     {
         public string FirstName { get; set; } = default!;
         public string LastName { get; set; } = default!;
-        public string? RefreshToken { get; set; }
-        public DateTime? RefreshTokenExpirationDate { get; set; }
     }
 }

@@ -10,36 +10,47 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using GoodBadHabitsTracker.Application.Exceptions;
 using ZkmBusTimetables.Application.DTOs.Responses;
+using ZkmBusTimetables.Application.Exceptions;
 using ZkmBusTimetables.Core.Models;
 
 namespace ZkmBusTimetables.Application.Features.Auth.Register
 {
-    public class RegisterCommandHandler(UserManager<ApplicationUser> userManager, RoleManager<ApplicationRole> roleManager, IMapper mapper) : IRequestHandler<RegisterCommand, RegisterResponse>
+    internal sealed class RegisterCommandHandler(
+        UserManager<ApplicationUser> userManager,
+        RoleManager<ApplicationRole> roleManager) : IRequestHandler<RegisterCommand, RegisterResponse>
     {
         public async Task<RegisterResponse> Handle(RegisterCommand command, CancellationToken cancellationToken)
         {
-            var request = command.Request;
-            var user = mapper.Map<ApplicationUser>(request);
-
-            var createUserResult = await userManager.CreateAsync(user, request.Password!);
-            if (!createUserResult.Succeeded)
-                return new RegisterResponse(false, null, createUserResult.Errors.Select(e => e.Description).ToList());
-
-            if (!await roleManager.RoleExistsAsync("Employee"))
+            ApplicationUser user = new()
             {
-                var role = new ApplicationRole { Id = Guid.NewGuid(), Name = "Employee", NormalizedName = "EMPLOYEE", ConcurrencyStamp = Guid.NewGuid().ToString() };
-                var createRoleResult = await roleManager.CreateAsync(role);
+                FirstName = command.Request.FirstName,
+                LastName = command.Request.LastName,
+                Email = command.Request.Email,
+                UserName = command.Request.UserName,
+                SecurityStamp = Guid.NewGuid().ToString()
+            };
 
+            var createUserResult = await userManager.CreateAsync(user, command.Request.Password);
+            if (!createUserResult.Succeeded)
+                throw new ValidationException(createUserResult.Errors.Select(e =>new ValidationError(e.Description.Split(' ')[0], e.Description)));
+
+            var isRoleExists = await roleManager.RoleExistsAsync("User");
+            if (!isRoleExists)
+            {
+                var role = new ApplicationRole() { Id = Guid.NewGuid(), Name = "User", NormalizedName = "USER", ConcurrencyStamp = Guid.NewGuid().ToString() };
+
+                var createRoleResult = await roleManager.CreateAsync(role);
                 if (!createRoleResult.Succeeded)
-                    return new RegisterResponse(false, null, createRoleResult.Errors.Select(e => e.Description).ToList());
+                    throw new AppException(System.Net.HttpStatusCode.BadRequest, "Failed to create role: " + string.Join(", ", createRoleResult.Errors.Select(e => e.Description)));
             }
 
-            var addToRoleResult = await userManager.AddToRoleAsync(user, "Employee");
+            var addToRoleResult = await userManager.AddToRoleAsync(user, "User");
             if (!addToRoleResult.Succeeded)
-                return new RegisterResponse(false, null, addToRoleResult.Errors.Select(e => e.Description).ToList());
+                throw new AppException(System.Net.HttpStatusCode.BadRequest, "Failed to add user to role: " + string.Join(", ", addToRoleResult.Errors.Select(e => e.Description)));
 
-            return new RegisterResponse(true, user, null);
+            return new RegisterResponse(user);
         }
     }
 }

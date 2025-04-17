@@ -10,7 +10,6 @@ using System.Net;
 using ZkmBusTimetables.Core.Models;
 using System.Threading;
 using ZkmBusTimetables.Application.Features.Auth.RefreshToken;
-using ZkmBusTimetables.Application.Features.Auth.Logout;
 
 namespace ZkmBusTimetables.WebApi.Controllers
 {
@@ -19,12 +18,19 @@ namespace ZkmBusTimetables.WebApi.Controllers
     public class AuthController(IMediator mediator) : ControllerBase
     {
         [HttpPost("register")]
+        [AllowAnonymous]
         public async Task<IActionResult> Register([FromBody] RegisterRequest request, CancellationToken cancellationToken)
         {
             var response = await mediator.Send(new RegisterCommand(request), cancellationToken);
-            return response.Success 
-                ? CreatedAtRoute("GetUserById", new { userId = response.User?.Id }, response)
-                : BadRequest(response);
+
+            var user = response!.User;
+            var userId = response!.User.Id;
+
+            if (response is not null)
+            {
+                return CreatedAtAction(nameof(Register), new { id = userId }, response);
+            }
+            else return BadRequest("Something goes wrong");
         }
 
         [HttpPost("login")]
@@ -32,58 +38,88 @@ namespace ZkmBusTimetables.WebApi.Controllers
         public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
         {
             var response = await mediator.Send(new LoginCommand(request), cancellationToken);
-            if (response.Success)
-            {
-                Response.Cookies.Append("__Secure-Fgp", response.UserFingerprint, new CookieOptions
-                {
-                    SameSite = SameSiteMode.Strict,
-                    HttpOnly = false,
-                    Secure = true,
-                    MaxAge = TimeSpan.FromMinutes(15),
-                }); 
-                var authType = User.Identity.AuthenticationType;
-                return Ok(new { accessToken = response.AccessToken.ToString(), refreshToken = response.RefreshToken, AuthenticationType = authType });
-            }
-            else return Unauthorized(response); 
-        }
 
-        [HttpPost("token/refresh")]
-        [Authorize(Policy = "AuthPolicy")]
-        public async Task<IActionResult> RefreshToken([FromHeader(Name = "Authorization")] string accessToken, [FromBody] string refreshToken, CancellationToken cancellationToken)
-        {
-            var response = await mediator.Send(new RefreshTokenCommand(accessToken, refreshToken), cancellationToken);
-            if (response.Success)
-            {
-                Response.Cookies.Append("__Secure-Fgp", response.UserFingerprint, new CookieOptions
-                {
-                    SameSite = SameSiteMode.Strict,
-                    HttpOnly = false,
-                    Secure = true,
-                    MaxAge = TimeSpan.FromMinutes(15),
-                });
-                var authType = User.Identity.AuthenticationType;
-                return Ok(new { accessToken = response.AccessToken.ToString(), refreshToken = response.RefreshToken, AuthenticationType = authType });
-            }
-            else return Unauthorized(response);
+            var userFingerprint = response.UserFingerprint;
+            var accessToken = response.AccessToken;
+            var refreshToken = response.RefreshToken;
+
+            AppendCookies(userFingerprint, refreshToken);
+
+            return Ok(new {accessToken});
         }
 
         [HttpPost("logout")]
-        [Authorize(Policy = "AuthPolicy")]
-        public async Task<IActionResult> Logout([FromHeader(Name = "Authorization")] string accessToken, CancellationToken cancellationToken)
+        [AllowAnonymous]
+        public IActionResult Logout()
         {
-            var response = await mediator.Send(new LogoutCommand(accessToken), cancellationToken);
-            if (response.Success)
+            DeleteCookies();
+            return NoContent();
+        }
+
+        [HttpPost("token/refresh")]
+        [AllowAnonymous]
+        public async Task<IActionResult> RefreshToken
+            (CancellationToken cancellationToken)
+        {
+            var refreshToken = Request.Cookies["__Secure-Fgp"];
+            var response = await mediator.Send(new RefreshTokenCommand(refreshToken), cancellationToken);
+
+            var userFingerprint = response.UserFingerprint;
+            var accessToken = response.AccessToken;
+            var newRefreshToken = response.RefreshToken;
+
+            Response.Cookies.Delete("__Secure-Rt");
+            AppendCookies(userFingerprint, newRefreshToken);
+
+            return Ok(accessToken);
+        }
+        private void AppendCookies(string userFingerprint, string refreshToken)
+        {
+            Response.Cookies.Append("__Secure-Fgp", userFingerprint, new CookieOptions
+            {
+                SameSite = SameSiteMode.Strict,
+                HttpOnly = true,
+                Secure = true,
+                MaxAge = TimeSpan.FromMinutes(15),
+                Path = "/",
+            });
+            Response.Cookies.Append("__Secure-Rt", refreshToken, new CookieOptions
+            {
+                SameSite = SameSiteMode.Strict,
+                HttpOnly = false,
+                Secure = true,
+                MaxAge = TimeSpan.FromDays(30),
+                Path = "/",
+            });
+        }
+        private void DeleteCookies()
+        {
+            if (Request.Cookies.TryGetValue("__Secure-Fgp", out var _ ))
             {
                 Response.Cookies.Delete("__Secure-Fgp", new CookieOptions
                 {
                     SameSite = SameSiteMode.Strict,
-                    HttpOnly = false,
+                    HttpOnly = true,
                     Secure = true,
                     MaxAge = TimeSpan.FromMinutes(15),
+                    Path = "/",
+                    Expires = DateTime.UtcNow.AddDays(-2)
                 });
-                return Ok();
             }
-            else return Unauthorized(response);
+            if (Request.Cookies.TryGetValue("__Secure-Rt", out var _))
+            {
+                Response.Cookies.Delete("__Secure-Rt", new CookieOptions
+                {
+                    SameSite = SameSiteMode.Strict,
+                    HttpOnly = false,
+                    Secure = true,
+                    MaxAge = TimeSpan.FromDays(30),
+                    Path = "/",
+                    Expires = DateTime.UtcNow.AddDays(-2)
+                });
+            }
+
+            return;
         }
     }
 }

@@ -17,7 +17,7 @@ namespace ZkmBusTimetables.Infrastructure.Repositories
 {
     public sealed class VariantsRepository(ZkmDbContext dbContext) : IVariantsRepository
     {
-        public async Task<Variant> GetAsync(
+        public async Task<Variant?> GetAsync(
             string lineName,
             Guid variantId,
             CancellationToken cancellationToken)
@@ -32,8 +32,7 @@ namespace ZkmBusTimetables.Infrastructure.Repositories
                 .Where(variant => variant.Id == variantId)
                 .AsNoTracking()
                 .AsSplitQuery()
-                .FirstOrDefaultAsync(cancellationToken)
-                ?? throw new HttpResponseException(HttpStatusCode.NotFound);
+                .FirstOrDefaultAsync(cancellationToken);
             /*var variant = await dbContext.Variants
                 .AsNoTracking()
                 .Include(variant => variant.RouteStops.OrderBy(routeStop => routeStop.Order))
@@ -68,14 +67,8 @@ namespace ZkmBusTimetables.Infrastructure.Repositories
         {
             var variants = await dbContext.Variants
                 .Include(variant => variant.RouteStops)
+                .Include(variant => variant.Line)
                 .Where(variant => variant.Line.Name == lineName && variant.RouteStops.Any(routeStop => routeStop.BusStopId == busStopId))
-                .Select(variant => new Variant
-                {
-                    LineId = variant.LineId,
-                    Route = variant.Route,
-                    ValidFrom = variant.ValidFrom,
-
-                })
                 .ToListAsync(cancellationToken);
 
             return variants;

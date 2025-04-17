@@ -10,11 +10,12 @@ namespace ZkmBusTimetables.Infrastructure.Utils.JwtTokenHandler
 {
     public interface IJwtTokenHandler
     {
-        public string GenerateAccessToken(UserSession userSession, out string userFingerprint);
-        public string GenerateRefreshToken();
-        public string GenerateUserFingerprint();
-        public string GenerateUserFingerprintHash(string userFingerprint);
-        public ClaimsPrincipal GetPrincipalFromExpiredToken(string token);
-        public ClaimsPrincipal GetClaims(string token);
+        string GenerateToken(ClaimsIdentity claimsIdentity, DateTime expiry);
+        string GenerateAccessToken(UserSession userSession, out string userFingerprint);
+        string GenerateRefreshToken(UserSession userSession);
+        string GenerateUserFingerprint();
+        string GenerateUserFingerprintHash(string userFingerprint);
+        ClaimsPrincipal ValidateAndGetPrincipalFromToken(string accessToken);
+        IEnumerable<Claim> GetClaimsFromToken(string token);
     }
 }

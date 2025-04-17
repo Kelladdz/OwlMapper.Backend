@@ -7,7 +7,6 @@ namespace ZkmBusTimetables.WebApi.Controllers
 {
     [Route("api/users")]
     [ApiController]
-    [Authorize(Roles = "Employee, Admin")]
     public class UsersController(UserManager<ApplicationUser> userManager) : ControllerBase
     {
         [HttpGet("{userId}", Name = "GetUserById")]

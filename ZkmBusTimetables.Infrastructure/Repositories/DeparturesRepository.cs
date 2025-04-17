@@ -35,16 +35,14 @@ namespace ZkmBusTimetables.Infrastructure.Repositories
                     VariantId = departure.VariantId,
                     Variant = new Variant
                     {
-                        Line = new Line
-                        {
-                            Name = departure.Variant.Line.Name
-                        },
+                        Line = departure.Variant.Line,
+                        LineId = departure.Variant.Line.Id,
                         Route = departure.Variant.Route,
                         IsDefault = departure.Variant.IsDefault,
                         RouteStops = new[] { departure.Variant.RouteStops.OrderByDescending(obj => obj.Order).FirstOrDefault()! },
                         RouteLinePoints = departure.Variant.RouteLinePoints.OrderBy(obj => obj.Order).ToList()
                     },
-                    
+
                     ScheduleDay = scheduleDayValues[0],
                     IsOnlyInSchoolDays = departure.IsOnlyInSchoolDays,
                     IsOnlyInDaysWithoutSchool = departure.IsOnlyInDaysWithoutSchool
@@ -52,7 +50,6 @@ namespace ZkmBusTimetables.Infrastructure.Repositories
                 .OrderBy(departure => departure.Time.Hour * 60 + departure.Time.Minute)
                 .ToListAsync(cancellationToken)
                 ?? throw new HttpResponseException(HttpStatusCode.NotFound);
-
 
             var today = DateTime.Today;
 
@@ -113,7 +110,7 @@ namespace ZkmBusTimetables.Infrastructure.Repositories
                 var departuresPerPage = departures.Where(departure => departure.Time > now).Skip((page - 1) * pageSize).Take(pageSize).ToList();
 
                 return departuresPerPage;
-            } 
+            }
             /*else if (pageSize == 0 && departures.Count < 10)
             {
                 restDepartures = await dbContext.Departures

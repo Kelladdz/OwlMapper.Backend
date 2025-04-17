@@ -7,5 +7,5 @@ using ZkmBusTimetables.Core.Models;
 
 namespace ZkmBusTimetables.Application.DTOs.Responses
 {
-    public record LoginResponse(bool Success, string AccessToken, string UserFingerprint, string RefreshToken, List<string>? Errors);
+    public record LoginResponse(string AccessToken, string UserFingerprint, string RefreshToken);
 }

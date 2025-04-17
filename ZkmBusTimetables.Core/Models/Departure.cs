@@ -12,7 +12,6 @@ namespace ZkmBusTimetables.Core.Models
     {
         public Guid Id { get; private init; } = Guid.NewGuid();
         public Guid VariantId { get; set; }
-        [JsonIgnore]
         public  Variant Variant { get; set; }
         public ScheduleDay ScheduleDay { get; set; }
         public TimeOnly Time { get; set; }

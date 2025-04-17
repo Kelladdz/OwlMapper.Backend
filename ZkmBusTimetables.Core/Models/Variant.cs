@@ -13,7 +13,6 @@ namespace ZkmBusTimetables.Core.Models
     {
         public Guid Id { get; private init; } = Guid.NewGuid();
         public Guid LineId { get; set; }
-        [JsonIgnore]
         public Line Line { get; init; } = default!;
         public string Route { get; set; } = default!;
         public bool IsDefault { get; set; } = default!;

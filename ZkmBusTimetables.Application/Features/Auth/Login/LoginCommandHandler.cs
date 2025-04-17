@@ -1,66 +1,45 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.DataProtection;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Net.Http.Headers;
-using System.Security.Authentication;
-using System.Security.Claims;
-using System.Text.Json;
+
 using ZkmBusTimetables.Application.DTOs.Responses;
 using ZkmBusTimetables.Core.Models;
 using ZkmBusTimetables.Infrastructure.Utils.JwtTokenHandler;
 using Microsoft.AspNetCore.Http;
 using System.Reflection.Metadata.Ecma335;
+using ZkmBusTimetables.Application.Exceptions;
 
 namespace ZkmBusTimetables.Application.Features.Auth.Login
 {
-    internal sealed class LoginCommandHandler(UserManager<ApplicationUser> userManager, IJwtTokenHandler jwtTokenHandler) : IRequestHandler<LoginCommand, LoginResponse>
+    internal sealed class LoginCommandHandler
+    (UserManager<ApplicationUser> userManager,
+        IJwtTokenHandler tokenHandler) : IRequestHandler<LoginCommand, LoginResponse>
     {
         public async Task<LoginResponse> Handle(LoginCommand command, CancellationToken cancellationToken)
         {
-            var user = await userManager.FindByNameAsync(command.Request.UserName);
-            if (user is null) 
-                return new LoginResponse(false, null, null, null, new List<string> { "Invalid email or password" });
+            var user = await userManager.FindByNameAsync(command.Request.UserName)
+                       ?? throw new AppException(System.Net.HttpStatusCode.Unauthorized, "Invalid name or password");
 
             var checkPasswordResult = await userManager.CheckPasswordAsync(user, command.Request.Password);
-            if (!checkPasswordResult)
-                return new LoginResponse(false, null, null, null, new List<string> { "Invalid email or password" });
+            if (!checkPasswordResult) throw new AppException(System.Net.HttpStatusCode.Unauthorized, "Invalid name or password");
 
-            var getUserRole = await userManager.GetRolesAsync(user);
-            if (getUserRole.Count == 0)
+            var userRoles = await userManager.GetRolesAsync(user);
+            if (userRoles.Count == 0)
             {
-                var result = await userManager.AddToRoleAsync(user, "Employee");
-                if (!result.Succeeded)
-                    return new LoginResponse(false, null, null, null, new List<string> { "Cannot add user to role" });
+                var addToRoleResult = await userManager.AddToRoleAsync(user, "User");
+                if (!addToRoleResult.Succeeded)
+                    throw new AppException(System.Net.HttpStatusCode.BadRequest, "Failed to add user to role: " + string.Join(", ", addToRoleResult.Errors.Select(e => e.Description)));
             }
 
-            var userSession = new UserSession(user.Id, user.UserName, user.FirstName, user.LastName, user.Email, getUserRole[0]);
+            var userSession = new UserSession(user.Id, user.UserName!, user.Email, userRoles);
 
-            var accessToken = jwtTokenHandler.GenerateAccessToken(userSession, out string userFingerprint);
-            if (accessToken is null)
-                return new LoginResponse(false, null, null, null, new List<string> { "Access token cannot be null" });
+            var accessToken = tokenHandler.GenerateAccessToken(userSession, out string userFingerprint)
+                              ?? throw new AppException(System.Net.HttpStatusCode.Unauthorized, "Something goes wrong. Try again.");
 
-            var refreshToken = jwtTokenHandler.GenerateRefreshToken();
-            if (refreshToken is null)
-                return new LoginResponse(false, null, null, null, new List<string> { "Refresh token cannot be null" });
+            var refreshToken = tokenHandler.GenerateRefreshToken(userSession)
+                               ?? throw new AppException(System.Net.HttpStatusCode.Unauthorized, "Something goes wrong. Try again.");
 
-            user.RefreshToken = refreshToken;
-            user.RefreshTokenExpirationDate = DateTime.UtcNow.AddDays(7);
-
-            var userUpdateResult = await userManager.UpdateAsync(user);
-            if (!userUpdateResult.Succeeded)
-                return new LoginResponse(false, null, null, null, new List<string> { "User update failed." });
-
-            return new LoginResponse(true, accessToken, refreshToken, userFingerprint, null);
+            return new LoginResponse(accessToken, refreshToken, userFingerprint);
         }
     }
 }

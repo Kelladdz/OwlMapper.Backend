@@ -8,5 +8,5 @@ using ZkmBusTimetables.Application.DTOs.Responses;
 
 namespace ZkmBusTimetables.Application.Features.Auth.RefreshToken
 {
-    public record RefreshTokenCommand(string AccessToken, string RefreshToken) : IRequest<RefreshTokenResponse>;
+    public record RefreshTokenCommand(string RefreshToken) : IRequest<LoginResponse>;
 }

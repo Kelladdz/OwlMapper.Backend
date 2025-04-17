@@ -16,11 +16,6 @@ using ZkmBusTimetables.Core.Models;
 using ZkmBusTimetables.Infrastructure.Persistance;
 using ZkmBusTimetables.Infrastructure.Repositories;
 using System.Net.Http.Headers;
-using System.Net.Http.Json;
-using System.Reflection.Metadata.Ecma335;
-using System.Text;
-using System.Text.Json;
-using System.Threading.Tasks;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
@@ -108,7 +103,7 @@ namespace ZkmBusTimetables.Infrastructure.Extensions
                         if (userFingerprintHash is null) return Task.CompletedTask;
 
                         var jwtSettings = Options.Create(new JwtSettings());
-                        if (userFingerprintHash != new JwtTokenHandler(jwtSettings, configuration).GenerateUserFingerprintHash(context.Request.Cookies["__Secure-Fgp"].Replace("__Secure-Fgp=", "", StringComparison.InvariantCultureIgnoreCase)))
+                        if (userFingerprintHash != new JwtTokenHandler(jwtSettings).GenerateUserFingerprintHash(context.Request.Cookies["__Secure-Fgp"].Replace("__Secure-Fgp=", "", StringComparison.InvariantCultureIgnoreCase)))
                         {
                             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                             return Task.CompletedTask;
@@ -116,14 +111,11 @@ namespace ZkmBusTimetables.Infrastructure.Extensions
                         return Task.CompletedTask;
                     };
                 });
-            
 
 
-            services.AddAuthorizationCore(options =>
-            {
-                options.AddPolicy("AuthPolicy", policy => policy.RequireRole("Employee", "Admin"));
-            });
-        
+
+
+
 
             services.AddScoped<ILinesRepository, LinesRepository>();
             services.AddScoped<IBusStopsRepository, BusStopsRepository>();

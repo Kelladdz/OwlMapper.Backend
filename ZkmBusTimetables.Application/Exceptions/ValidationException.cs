@@ -4,16 +4,16 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ZkmBusTimetables.Application.Exceptions
+namespace GoodBadHabitsTracker.Application.Exceptions
 {
-    public class ValidationException : Exception
+    public sealed class ValidationException : Exception
     {
-        public ValidationException(IReadOnlyCollection<ValidationError> errors) : base("Validation failed")
+        public ValidationException(IEnumerable<ValidationError> errors) : base("Validation failed")
         {
             Errors = errors;
         }
-        public IReadOnlyCollection<ValidationError> Errors { get; }
+        public IEnumerable<ValidationError> Errors { get; }
     }
 
-    public record ValidationError(string Propertyname, string ErrorMessage);
+    public sealed record ValidationError(string PropertyName, string ErrorMessage);
 }

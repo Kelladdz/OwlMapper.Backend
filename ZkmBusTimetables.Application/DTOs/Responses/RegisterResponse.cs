@@ -9,6 +9,6 @@ using ZkmBusTimetables.Core.Models;
 
 namespace ZkmBusTimetables.Application.DTOs.Responses
 {
-    public record RegisterResponse(bool Success, ApplicationUser? User, List<string>? Errors);
-    
+    public record RegisterResponse(ApplicationUser? User);
+
 }

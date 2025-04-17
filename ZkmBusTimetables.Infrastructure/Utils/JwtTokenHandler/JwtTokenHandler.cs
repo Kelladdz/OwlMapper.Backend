@@ -15,63 +15,84 @@ using ZkmBusTimetables.Infrastructure.Configurations;
 
 namespace ZkmBusTimetables.Infrastructure.Utils.JwtTokenHandler
 {
-    public class JwtTokenHandler(IOptions<JwtSettings> jwtSettings, IConfiguration configuration) : JwtSecurityTokenHandler, IJwtTokenHandler
+    internal sealed class JwtTokenHandler(IOptions<JwtSettings> jwtSettings) : IJwtTokenHandler
     {
-        public string GenerateAccessToken(UserSession userSession, out string userFingerprint)
+        private readonly JwtSettings _jwtSettings = jwtSettings.Value;
+        public string GenerateToken(ClaimsIdentity claimsIdentity, DateTime expiry)
         {
-            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:Key"]));
-
-            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
-
-            userFingerprint = GenerateUserFingerprint();
-            var userFingerprintHash = GenerateUserFingerprintHash(userFingerprint);
-
-            var claims = new[]
-            {
-            new Claim(JwtRegisteredClaimNames.Sub, userSession.Id.ToString()),
-            new Claim(JwtRegisteredClaimNames.Name, userSession.UserName),
-            new Claim(JwtRegisteredClaimNames.Email, userSession.Email),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new Claim("firstName", userSession.FirstName),
-            new Claim("lastName", userSession.LastName),
-            new Claim("role", userSession.Role),
-            new Claim("userFingerprint", userFingerprintHash),
-            new Claim(JwtRegisteredClaimNames.Iat, new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
-            };
-
-            var claimsIdentity = new ClaimsIdentity(claims);
-
-
-
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Key));
+            var signingCredentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+            var header = new JwtHeader(signingCredentials);
+            header["kid"] = Guid.NewGuid().ToString();
             var tokenDescriptor = new SecurityTokenDescriptor
             {
-                Issuer = "https://localhost:7033",
-                Audience = "https://localhost:8080",
-                SigningCredentials = credentials,
-                Expires = DateTime.UtcNow.AddMinutes(15),
-                NotBefore = DateTime.UtcNow,
-                Subject = claimsIdentity
-            };
+                Issuer = _jwtSettings.Issuer,
+                Audience = _jwtSettings.Audience,
+                SigningCredentials = signingCredentials,
+                Expires = expiry,
+                NotBefore = _jwtSettings.NotBefore,
+                Subject = claimsIdentity,
 
+            };
 
             var handler = new JwtSecurityTokenHandler();
             var token = handler.CreateToken(tokenDescriptor);
-            var encodedJwt = handler.WriteToken(token);
-            return encodedJwt;
+            var tokenString = handler.WriteToken(token);
+
+            return tokenString;
         }
 
-
-        public string GenerateRefreshToken()
+        public string GenerateAccessToken(UserSession userSession, out string userFingerprint)
         {
-            string refreshToken;
-            var randomString = new byte[32];
-            using (var secureRandom = RandomNumberGenerator.Create())
-            {
-                secureRandom.GetBytes(randomString);
-                refreshToken = Convert.ToBase64String(randomString);
-            }
+            userFingerprint = GenerateUserFingerprint();
+            var userFingerprintHash = GenerateUserFingerprintHash(userFingerprint);
 
-            return refreshToken;
+            var claimsIdentity = GetClaimsIdentity(userSession);
+            claimsIdentity.AddClaim(new Claim("userFingerprint", userFingerprintHash));
+            var expiry = _jwtSettings.Expiration;
+
+            return GenerateToken(claimsIdentity, expiry);
+        }
+
+        public string GenerateRefreshToken(UserSession userSession)
+        {
+            var claimsIdentity = GetClaimsIdentity(userSession);
+
+            var expiry = _jwtSettings.RefreshTokenExpiration;
+
+            return GenerateToken(claimsIdentity, expiry);
+        }
+        public ClaimsPrincipal ValidateAndGetPrincipalFromToken(string token)
+        {
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Key));
+            var signingCredentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+
+            var tokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = signingCredentials.Key,
+                ValidateIssuer = true,
+                ValidIssuer = _jwtSettings.Issuer,
+                ValidateAudience = true,
+                ValidAudience = _jwtSettings.Audience,
+                ValidateLifetime = false,
+            };
+
+            var handler = new JwtSecurityTokenHandler();
+            var principal = handler.ValidateToken(token, tokenValidationParameters, out var securityToken);
+            var jwtSecurityToken = securityToken as JwtSecurityToken;
+            if (jwtSecurityToken is null || !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
+                throw new SecurityTokenException("Invalid token");
+
+            return principal;
+        }
+
+        public IEnumerable<Claim> GetClaimsFromToken(string token)
+        {
+            var handler = new JwtSecurityTokenHandler();
+            var claims = handler.ReadJwtToken(token).Claims;
+
+            return claims;
         }
 
         public string GenerateUserFingerprint()
@@ -96,35 +117,19 @@ namespace ZkmBusTimetables.Infrastructure.Utils.JwtTokenHandler
             return userFingerprintHash;
         }
 
-        public ClaimsPrincipal GetPrincipalFromExpiredToken(string token)
+        private ClaimsIdentity GetClaimsIdentity(UserSession userSession)
         {
-            var tokenValidationParameters = new TokenValidationParameters
+            var claims = new[]
             {
-                ValidateIssuer = true,
-                ValidIssuer = jwtSettings.Value.Issuer,
-                ValidateAudience = true,
-                ValidAudience = jwtSettings.Value.Audience,
-                ValidateIssuerSigningKey = true,
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Value.Key)),
-                ValidateLifetime = true
+            new Claim(JwtRegisteredClaimNames.Sub, userSession.Id.ToString()),
+            new Claim(JwtRegisteredClaimNames.Name, userSession.UserName),
+            new Claim(JwtRegisteredClaimNames.Email, userSession.Email),
+            new Claim(JwtRegisteredClaimNames.Jti, _jwtSettings.Jti),
+            new Claim("roles", string.Join(", ", userSession.Roles)),
+            new Claim(JwtRegisteredClaimNames.Iat, new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
             };
 
-            var tokenHandler = new JwtSecurityTokenHandler();
-            SecurityToken securityToken;
-            var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out securityToken);
-
-            return principal;
-        }
-
-        public ClaimsPrincipal GetClaims(string token)
-        {
-            var handler = new JwtSecurityTokenHandler();
-            var readedToken = handler.ReadJwtToken(token);
-
-            var ClaimsIdentity = new ClaimsIdentity(readedToken.Claims, "Token");
-            var principal = new ClaimsPrincipal(ClaimsIdentity);
-
-            return principal;
+            return new ClaimsIdentity(claims);
         }
     }
 }

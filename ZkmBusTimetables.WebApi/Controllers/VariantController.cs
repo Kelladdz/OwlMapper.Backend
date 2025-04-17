@@ -17,11 +17,10 @@ namespace ZkmBusTimetables.WebApi.Controllers
 {
     [ApiController]
     [Route("api/lines/{lineName}/variants")]
-    
+
     public class VariantsController(IMediator mediator, IUserContext userContext) : ControllerBase
     {
         [HttpGet("{id}")]
-        [AllowAnonymous]
         public async Task<IActionResult> Get(
             [FromRoute] Guid id,
             [FromRoute] string lineName,
@@ -32,7 +31,6 @@ namespace ZkmBusTimetables.WebApi.Controllers
         }
 
         [HttpGet("filter")]
-        [AllowAnonymous]
         public async Task<IActionResult> GetByBusStopId(
             [FromRoute] string lineName,
             [FromQuery] int busStopId,
@@ -43,9 +41,8 @@ namespace ZkmBusTimetables.WebApi.Controllers
         }
 
         [HttpGet]
-        [AllowAnonymous]
         public async Task<IActionResult> GetAll(
-            [FromRoute] string lineName, 
+            [FromRoute] string lineName,
             CancellationToken cancellationToken)
         {
             var response = await mediator.Send(new GetAllQuery(lineName), cancellationToken);
@@ -53,10 +50,9 @@ namespace ZkmBusTimetables.WebApi.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Employee, Admin")]
         public async Task<IActionResult> Post(
             [FromRoute] string lineName,
-            [FromBody] VariantRequest request, 
+            [FromBody] VariantRequest request,
             CancellationToken cancellationToken)
         {
             var currentUser = userContext.GetCurrentUser();
@@ -65,7 +61,6 @@ namespace ZkmBusTimetables.WebApi.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize(Roles = "Employee, Admin")]
         public async Task<IActionResult> Put(
             [FromRoute] string lineName,
             [FromRoute] Guid id,
@@ -78,7 +73,6 @@ namespace ZkmBusTimetables.WebApi.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Employee, Admin")]
         public async Task<IActionResult> Delete(
             [FromRoute] Guid id,
             CancellationToken cancellationToken)

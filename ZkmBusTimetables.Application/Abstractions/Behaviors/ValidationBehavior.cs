@@ -7,7 +7,9 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using GoodBadHabitsTracker.Application.Exceptions;
 using ZkmBusTimetables.Application.Exceptions;
+using ValidationException = GoodBadHabitsTracker.Application.Exceptions.ValidationException;
 
 namespace ZkmBusTimetables.Application.Abstractions.Behaviors
 {
@@ -28,7 +30,7 @@ namespace ZkmBusTimetables.Application.Abstractions.Behaviors
 
             if (errors.Count() > 0)
             {
-                throw new Exceptions.ValidationException(errors);
+                throw new ValidationException(errors);
             }
 
             return await next();

@@ -10,7 +10,6 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
 /*builder.Host.UseServiceProviderFactory(new AutofacServiceProviderFactory())
     .ConfigureContainer<ContainerBuilder>(containerBuilder =>
     {
@@ -82,9 +81,6 @@ app.MapControllers();
 app.UseRouting();
 app.UseCors();
 
-app.UseAuthentication();
-
-app.UseAuthorization();
 
 app.UseEndpoints(endpoints =>
 {
@@ -92,4 +88,3 @@ app.UseEndpoints(endpoints =>
 });
 
 app.Run();
-    
